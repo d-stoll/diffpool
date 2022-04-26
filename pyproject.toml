@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "diffpool"
+version = "0.1.0"
+description = ""
+authors = ["Daniel Stoll"]
+
+[tool.poetry.dependencies]
+python = "^3.9, <3.10"
+torch = "^1.9.0, <1.10.0"
+dgl = [
+    {url = "https://data.dgl.ai/wheels/dgl-0.8.1-cp39-cp39-manylinux1_x86_64.whl", platform = "linux"},
+    {url = "https://data.dgl.ai/wheels/dgl-0.8.1-cp39-cp39-win_amd64.whl", platform = "win32"}
+]
+scipy = "^1.8.0"
+networkx = "^2.8"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
