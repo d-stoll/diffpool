@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "diffpool"
 version = "0.1.0"
-description = ""
+description = "Diffpool implementation for GDLMA SoSe22 @ TUM"
 authors = ["Daniel Stoll"]
 
 [tool.poetry.dependencies]
