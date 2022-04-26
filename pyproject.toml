@@ -6,13 +6,26 @@ authors = ["Daniel Stoll"]
 
 [tool.poetry.dependencies]
 python = "^3.9, <3.10"
-torch = "^1.9.0, <1.10.0"
 dgl = [
     {url = "https://data.dgl.ai/wheels/dgl-0.8.1-cp39-cp39-manylinux1_x86_64.whl", platform = "linux"},
     {url = "https://data.dgl.ai/wheels/dgl-0.8.1-cp39-cp39-win_amd64.whl", platform = "win32"}
 ]
+torch-scatter = [
+    {url = "https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_scatter-2.0.9-cp39-cp39-linux_x86_64.whl", platform = "linux"},
+    {url = "https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_scatter-2.0.9-cp39-cp39-win_amd64.whl", platform = "win32"}
+]
+torch-sparse = [
+    {url = "https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_sparse-0.6.13-cp39-cp39-linux_x86_64.whl", platform = "linux"},
+    {url = "https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_sparse-0.6.13-cp39-cp39-win_amd64.whl", platform = "win32"}
+]
+torch-spline-conv = [
+    {url = "https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_spline_conv-1.2.1-cp39-cp39-linux_x86_64.whl", platform = "linux"},
+    {url = "https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_spline_conv-1.2.1-cp39-cp39-win_amd64.whl", platform = "win32"}
+]
 scipy = "^1.8.0"
 networkx = "^2.8"
+torch = "^1.11.0"
+torch-geometric = "^2.0.4"
 
 [tool.poetry.dev-dependencies]
 
