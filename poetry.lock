@@ -220,7 +220,6 @@ tqdm = "*"
 [package.source]
 type = "url"
 url = "https://data.dgl.ai/wheels/dgl-0.8.1-cp39-cp39-manylinux1_x86_64.whl"
-
 [[package]]
 name = "entrypoints"
 version = "0.4"
@@ -319,7 +318,7 @@ test = ["pytest (>=6.0)", "pytest-cov", "flaky", "ipyparallel", "pre-commit", "p
 
 [[package]]
 name = "ipython"
-version = "8.2.0"
+version = "8.3.0"
 description = "IPython: Productive Interactive Computing"
 category = "main"
 optional = false
@@ -397,7 +396,7 @@ testing = ["Django (<3.1)", "colorama", "docopt", "pytest (<7.0.0)"]
 
 [[package]]
 name = "jinja2"
-version = "3.1.1"
+version = "3.1.2"
 description = "A very fast and expressive template engine."
 category = "main"
 optional = false
@@ -1219,7 +1218,6 @@ test = ["pytest", "pytest-cov"]
 [package.source]
 type = "url"
 url = "https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_scatter-2.0.9-cp39-cp39-linux_x86_64.whl"
-
 [[package]]
 name = "torch-sparse"
 version = "0.6.13"
@@ -1237,7 +1235,6 @@ test = ["pytest", "pytest-cov"]
 [package.source]
 type = "url"
 url = "https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_sparse-0.6.13-cp39-cp39-linux_x86_64.whl"
-
 [[package]]
 name = "torch-spline-conv"
 version = "1.2.1"
@@ -1252,7 +1249,6 @@ test = ["pytest", "pytest-cov"]
 [package.source]
 type = "url"
 url = "https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_spline_conv-1.2.1-cp39-cp39-linux_x86_64.whl"
-
 [[package]]
 name = "tornado"
 version = "6.1"
@@ -1553,8 +1549,8 @@ ipykernel = [
     {file = "ipykernel-6.13.0.tar.gz", hash = "sha256:0e28273e290858393e86e152b104e5506a79c13d25b951ac6eca220051b4be60"},
 ]
 ipython = [
-    {file = "ipython-8.2.0-py3-none-any.whl", hash = "sha256:1b672bfd7a48d87ab203d9af8727a3b0174a4566b4091e9447c22fb63ea32857"},
-    {file = "ipython-8.2.0.tar.gz", hash = "sha256:70e5eb132cac594a34b5f799bd252589009905f05104728aea6a403ec2519dc1"},
+    {file = "ipython-8.3.0-py3-none-any.whl", hash = "sha256:341456643a764c28f670409bbd5d2518f9b82c013441084ff2c2fc999698f83b"},
+    {file = "ipython-8.3.0.tar.gz", hash = "sha256:807ae3cf43b84693c9272f70368440a9a7eaa2e7e6882dad943c32fbf7e51402"},
 ]
 ipython-genutils = [
     {file = "ipython_genutils-0.2.0-py2.py3-none-any.whl", hash = "sha256:72dd37233799e619666c9f639a9da83c34013a73e8bbc79a7a6348d93c61fab8"},
@@ -1569,8 +1565,8 @@ jedi = [
     {file = "jedi-0.18.1.tar.gz", hash = "sha256:74137626a64a99c8eb6ae5832d99b3bdd7d29a3850fe2aa80a4126b2a7d949ab"},
 ]
 jinja2 = [
-    {file = "Jinja2-3.1.1-py3-none-any.whl", hash = "sha256:539835f51a74a69f41b848a9645dbdc35b4f20a3b601e2d9a7e22947b15ff119"},
-    {file = "Jinja2-3.1.1.tar.gz", hash = "sha256:640bed4bb501cbd17194b3cace1dc2126f5b619cf068a726b98192a0fde74ae9"},
+    {file = "Jinja2-3.1.2-py3-none-any.whl", hash = "sha256:6088930bfe239f0e6710546ab9c19c9ef35e29792895fed6e6e31a023a182a61"},
+    {file = "Jinja2-3.1.2.tar.gz", hash = "sha256:31351a702a408a9e7595a8fc6150fc3f43bb6bf7e319770cbc0db9df9437e852"},
 ]
 joblib = [
     {file = "joblib-1.1.0-py2.py3-none-any.whl", hash = "sha256:f21f109b3c7ff9d95f8387f752d0d9c34a02aa2f7060c2135f465da0e5160ff6"},

@@ -11,7 +11,13 @@ Official Pytorch Geometric (PyG) example: https://github.com/pyg-team/pytorch_ge
 
 Official Deep Graph Library (DGL) example: https://github.com/dmlc/dgl/tree/master/examples/pytorch/diffpool
 
-## Installation
+# Dependencies
+
+* PyTorch 1.11+
+* PyTorch-Geometric 2.0+
+* Deep Graph Library 0.8+
+
+# Installation
 
 Make sure you have [Python 3.9](https://www.python.org/downloads/release/python-3912/) and 
 [Poetry](https://python-poetry.org/docs/#installation) installed on your system. The code is only tested on Linux (Fedora) 
