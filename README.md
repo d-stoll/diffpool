@@ -1,5 +1,7 @@
 # Hierarchical Graph Representation Learning with Differentiable Pooling
 
+<img src="static/diffpool.png" alt="Diffpool" width="800" />
+
 Diffpool implementation for the Graph Deep Learning for Medical Applications seminar in the summer semester of 2022 at 
 the Technical University of Munich.
 
