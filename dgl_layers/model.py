@@ -1,216 +1,81 @@
-import dgl
+from math import ceil
+
 import torch
-import torch.nn as nn
-from dgl.nn.pytorch import DenseSAGEConv, SAGEConv
-from torch.nn import init, BatchNorm1d
-
-from .diffpool import BatchedDiffPool
-from .gnn import DiffPoolBatchedGraphLayer
-from .utils import batch2tensor
+import torch.nn.functional as F
+from dgl.nn.pytorch import DenseSAGEConv
+from torch_geometric.nn import dense_diff_pool
 
 
-class DiffPool(nn.Module):
-    """
-    DiffPool Fuse
-    """
+class GNN(torch.nn.Module):
+    def __init__(self, in_channels, hidden_channels, out_channels, lin=True):
+        super().__init__()
 
-    def __init__(self, input_dim, hidden_dim, embedding_dim,
-                 label_dim, activation, n_layers, dropout,
-                 n_pooling, linkpred, batch_size, aggregator_type,
-                 assign_dim, pool_ratio, cat=False):
-        super(DiffPool, self).__init__()
-        self.link_pred = linkpred
-        self.concat = cat
-        self.n_pooling = n_pooling
-        self.batch_size = batch_size
-        self.link_pred_loss = []
-        self.entropy_loss = []
+        self.conv1 = DenseSAGEConv(in_channels, hidden_channels)
+        self.bn1 = torch.nn.BatchNorm1d(hidden_channels)
+        self.conv2 = DenseSAGEConv(hidden_channels, hidden_channels)
+        self.bn2 = torch.nn.BatchNorm1d(hidden_channels)
+        self.conv3 = DenseSAGEConv(hidden_channels, out_channels)
+        self.bn3 = torch.nn.BatchNorm1d(out_channels)
 
-        # list of GNN modules before the first diffpool operation
-        self.gc_before_pool = nn.ModuleList()
-        self.diffpool_layers = nn.ModuleList()
-
-        # list of list of GNN modules, each list after one diffpool operation
-        self.gc_after_pool = nn.ModuleList()
-        self.assign_dim = assign_dim
-        self.bn = True
-        self.num_aggs = 1
-
-        # constructing layers
-        # layers before diffpool
-        assert n_layers >= 3, "n_layers too few"
-        self.gc_before_pool.append(
-            SAGEConv(
-                input_dim,
-                hidden_dim,
-                activation=activation,
-                feat_drop=dropout,
-                norm=BatchNorm1d(hidden_dim),
-                aggregator_type=aggregator_type
-            ))
-        for _ in range(n_layers - 2):
-            self.gc_before_pool.append(
-                SAGEConv(
-                    hidden_dim,
-                    hidden_dim,
-                    activation=activation,
-                    feat_drop=dropout,
-                    norm=BatchNorm1d(hidden_dim),
-                    aggregator_type=aggregator_type
-                ))
-        self.gc_before_pool.append(
-            SAGEConv(
-                hidden_dim,
-                embedding_dim,
-                feat_drop=dropout,
-                aggregator_type=aggregator_type))
-
-        assign_dims = []
-        assign_dims.append(self.assign_dim)
-        if self.concat:
-            # diffpool layer receive pool_emedding_dim node feature tensor
-            # and return pool_embedding_dim node embedding
-            pool_embedding_dim = hidden_dim * (n_layers - 1) + embedding_dim
+        if lin is True:
+            self.lin = torch.nn.Linear(2 * hidden_channels + out_channels,
+                                       out_channels)
         else:
+            self.lin = None
 
-            pool_embedding_dim = embedding_dim
+    def bn(self, i, x):
+        batch_size, num_nodes, num_channels = x.size()
 
-        self.first_diffpool_layer = DiffPoolBatchedGraphLayer(
-            pool_embedding_dim,
-            self.assign_dim,
-            hidden_dim,
-            activation,
-            dropout,
-            aggregator_type,
-            self.link_pred)
-        gc_after_per_pool = nn.ModuleList()
+        x = x.view(-1, num_channels)
+        x = getattr(self, f'bn{i}')(x)
+        x = x.view(batch_size, num_nodes, num_channels)
+        return x
 
-        for _ in range(n_layers - 1):
-            gc_after_per_pool.append(DenseSAGEConv(hidden_dim, hidden_dim))
-        gc_after_per_pool.append(DenseSAGEConv(hidden_dim, embedding_dim))
-        self.gc_after_pool.append(gc_after_per_pool)
+    def forward(self, x, adj, mask=None):
+        x0 = x
+        x1 = self.bn(1, self.conv1(x0, adj, mask).relu())
+        x2 = self.bn(2, self.conv2(x1, adj, mask).relu())
+        x3 = self.bn(3, self.conv3(x2, adj, mask).relu())
 
-        self.assign_dim = int(self.assign_dim * pool_ratio)
-        # each pooling module
-        for _ in range(n_pooling - 1):
-            self.diffpool_layers.append(
-                BatchedDiffPool(
-                    pool_embedding_dim,
-                    self.assign_dim,
-                    hidden_dim,
-                    self.link_pred))
-            gc_after_per_pool = nn.ModuleList()
-            for _ in range(n_layers - 1):
-                gc_after_per_pool.append(
-                    DenseSAGEConv(hidden_dim, hidden_dim))
-            gc_after_per_pool.append(
-                DenseSAGEConv(hidden_dim, embedding_dim))
-            self.gc_after_pool.append(gc_after_per_pool)
-            assign_dims.append(self.assign_dim)
-            self.assign_dim = int(self.assign_dim * pool_ratio)
+        x = torch.cat([x1, x2, x3], dim=-1)
 
-        # predicting layer
-        if self.concat:
-            self.pred_input_dim = pool_embedding_dim * \
-                self.num_aggs * (n_pooling + 1)
-        else:
-            self.pred_input_dim = embedding_dim * self.num_aggs
-        self.pred_layer = nn.Linear(self.pred_input_dim, label_dim)
+        if self.lin is not None:
+            x = self.lin(x).relu()
 
-        # weight initialization
-        for m in self.modules():
-            if isinstance(m, nn.Linear):
-                m.weight.data = init.xavier_uniform_(m.weight.data,
-                                                     gain=nn.init.calculate_gain('relu'))
-                if m.bias is not None:
-                    m.bias.data = init.constant_(m.bias.data, 0.0)
+        return x
 
-    def gcn_forward(self, g, h, gc_layers, cat=False):
-        """
-        Return gc_layer embedding cat.
-        """
-        block_readout = []
-        for gc_layer in gc_layers[:-1]:
-            h = gc_layer(g, h)
-            block_readout.append(h)
-        h = gc_layers[-1](g, h)
-        block_readout.append(h)
-        if cat:
-            block = torch.cat(block_readout, dim=1)  # N x F, F = F1 + F2 + ...
-        else:
-            block = h
-        return block
 
-    def gcn_forward_tensorized(self, h, adj, gc_layers, cat=False):
-        block_readout = []
-        for gc_layer in gc_layers:
-            h = gc_layer(h, adj)
-            block_readout.append(h)
-        if cat:
-            block = torch.cat(block_readout, dim=2)  # N x F, F = F1 + F2 + ...
-        else:
-            block = h
-        return block
+class DiffPool(torch.nn.Module):
+    def __init__(self, num_features, num_classes, max_nodes=150):
+        super().__init__()
 
-    def forward(self, g):
-        self.link_pred_loss = []
-        self.entropy_loss = []
-        h = g.ndata['feat']
-        # node feature for assignment matrix computation is the same as the
-        # original node feature
-        h_a = h
+        num_nodes = ceil(0.25 * max_nodes)
+        self.gnn1_pool = GNN(num_features, 64, num_nodes)
+        self.gnn1_embed = GNN(num_features, 64, 64, lin=False)
 
-        out_all = []
+        num_nodes = ceil(0.25 * num_nodes)
+        self.gnn2_pool = GNN(3 * 64, 64, num_nodes)
+        self.gnn2_embed = GNN(3 * 64, 64, 64, lin=False)
 
-        # we use GCN blocks to get an embedding first
-        g_embedding = self.gcn_forward(g, h, self.gc_before_pool, self.concat)
+        self.gnn3_embed = GNN(3 * 64, 64, 64, lin=False)
 
-        g.ndata['h'] = g_embedding
+        self.lin1 = torch.nn.Linear(3 * 64, 64)
+        self.lin2 = torch.nn.Linear(64, num_classes)
 
-        readout = dgl.sum_nodes(g, 'h')
-        out_all.append(readout)
-        if self.num_aggs == 2:
-            readout = dgl.max_nodes(g, 'h')
-            out_all.append(readout)
+    def forward(self, x, adj, mask=None):
+        s = self.gnn1_pool(x, adj, mask)
+        x = self.gnn1_embed(x, adj, mask)
 
-        adj, h = self.first_diffpool_layer(g, g_embedding)
-        node_per_pool_graph = int(adj.size()[0] / len(g.batch_num_nodes()))
+        x, adj, l1, e1 = dense_diff_pool(x, adj, s, mask)
 
-        h, adj = batch2tensor(adj, h, node_per_pool_graph)
-        h = self.gcn_forward_tensorized(
-            h, adj, self.gc_after_pool[0], self.concat)
-        readout = torch.sum(h, dim=1)
-        out_all.append(readout)
-        if self.num_aggs == 2:
-            readout, _ = torch.max(h, dim=1)
-            out_all.append(readout)
+        s = self.gnn2_pool(x, adj)
+        x = self.gnn2_embed(x, adj)
 
-        for i, diffpool_layer in enumerate(self.diffpool_layers):
-            h, adj = diffpool_layer(h, adj)
-            h = self.gcn_forward_tensorized(
-                h, adj, self.gc_after_pool[i + 1], self.concat)
-            readout = torch.sum(h, dim=1)
-            out_all.append(readout)
-            if self.num_aggs == 2:
-                readout, _ = torch.max(h, dim=1)
-                out_all.append(readout)
-        if self.concat or self.num_aggs > 1:
-            final_readout = torch.cat(out_all, dim=1)
-        else:
-            final_readout = readout
-        ypred = self.pred_layer(final_readout)
-        return ypred
+        x, adj, l2, e2 = dense_diff_pool(x, adj, s)
 
-    def loss(self, pred, label):
-        '''
-        loss function
-        '''
-        #softmax + CE
-        criterion = nn.CrossEntropyLoss()
-        loss = criterion(pred, label)
-        for key, value in self.first_diffpool_layer.loss_log.items():
-            loss += value
-        for diffpool_layer in self.diffpool_layers:
-            for key, value in diffpool_layer.loss_log.items():
-                loss += value
-        return loss
+        x = self.gnn3_embed(x, adj)
+
+        x = x.mean(dim=1)
+        x = self.lin1(x).relu()
+        x = self.lin2(x)
+        return F.log_softmax(x, dim=-1), l1 + l2, e1 + e2
